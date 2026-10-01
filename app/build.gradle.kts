@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -17,13 +19,12 @@ android {
 
         // Optional: API-Key beim Build einbetten (Umgebungsvariable oder local.properties).
         // Ohne Key kann er in der App unter "Einstellungen" eingetragen werden.
-        val localProps = java.util.Properties().apply {
+        val localProps = Properties().apply {
             val f = rootProject.file("local.properties")
             if (f.exists()) f.inputStream().use { load(it) }
         }
-        val apiKey = System.getenv("YOUTUBE_API_KEY")
-            ?: localProps.getProperty("YOUTUBE_API_KEY")
-            ?: ""
+        val apiKey: String = System.getenv("YOUTUBE_API_KEY")?.takeIf { it.isNotBlank() }
+            ?: localProps.getProperty("YOUTUBE_API_KEY", "")
         buildConfigField("String", "DEFAULT_YOUTUBE_API_KEY", "\"$apiKey\"")
     }
 

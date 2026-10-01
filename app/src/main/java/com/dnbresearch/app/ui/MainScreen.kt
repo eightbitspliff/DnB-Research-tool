@@ -21,6 +21,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.GraphicEq
+import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
@@ -35,6 +36,8 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -61,6 +64,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.dnbresearch.app.MainViewModel
+import com.dnbresearch.app.PlaylistState
 import com.dnbresearch.app.SearchState
 import com.dnbresearch.app.data.Track
 import java.time.LocalDate
@@ -69,7 +73,11 @@ import java.time.temporal.ChronoUnit
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreen(viewModel: MainViewModel, onOpenTrack: (Track) -> Unit) {
+fun MainScreen(
+    viewModel: MainViewModel,
+    onOpenUrl: (String) -> Unit,
+    onCreatePlaylist: () -> Unit,
+) {
     var showSettings by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
@@ -127,11 +135,6 @@ fun MainScreen(viewModel: MainViewModel, onOpenTrack: (Track) -> Unit) {
                     )
                 }
                 FilterChip(
-                    selected = viewModel.hideMixes,
-                    onClick = { viewModel.updateHideMixes(!viewModel.hideMixes) },
-                    label = { Text("Keine Mixe") },
-                )
-                FilterChip(
                     selected = viewModel.officialOnly,
                     onClick = { viewModel.updateOfficialOnly(!viewModel.officialOnly) },
                     label = { Text("Nur offizielle Releases") },
@@ -150,7 +153,13 @@ fun MainScreen(viewModel: MainViewModel, onOpenTrack: (Track) -> Unit) {
                     if (s.tracks.isEmpty()) {
                         CenterMessage("Keine neuen Tracks gefunden. Versuch es mit weniger Filtern.")
                     } else {
-                        TrackList(s.tracks, onOpenTrack)
+                        TrackList(
+                            tracks = s.tracks,
+                            playlistState = viewModel.playlistState,
+                            onOpenUrl = onOpenUrl,
+                            onCreatePlaylist = onCreatePlaylist,
+                            onDismissPlaylist = viewModel::dismissPlaylistResult,
+                        )
                     }
             }
         }
@@ -169,11 +178,20 @@ fun MainScreen(viewModel: MainViewModel, onOpenTrack: (Track) -> Unit) {
 }
 
 @Composable
-private fun TrackList(tracks: List<Track>, onOpenTrack: (Track) -> Unit) {
+private fun TrackList(
+    tracks: List<Track>,
+    playlistState: PlaylistState,
+    onOpenUrl: (String) -> Unit,
+    onCreatePlaylist: () -> Unit,
+    onDismissPlaylist: () -> Unit,
+) {
     LazyColumn(
         contentPadding = PaddingValues(bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
+        item {
+            PlaylistPanel(tracks.size, playlistState, onOpenUrl, onCreatePlaylist, onDismissPlaylist)
+        }
         item {
             Text(
                 "${tracks.size} Tracks · Antippen öffnet YouTube Music",
@@ -182,8 +200,76 @@ private fun TrackList(tracks: List<Track>, onOpenTrack: (Track) -> Unit) {
             )
         }
         items(tracks, key = { it.videoId }) { track ->
-            TrackRow(track) { onOpenTrack(track) }
+            TrackRow(track) { onOpenUrl(track.youTubeMusicUrl) }
         }
+    }
+}
+
+@Composable
+private fun PlaylistPanel(
+    trackCount: Int,
+    state: PlaylistState,
+    onOpenUrl: (String) -> Unit,
+    onCreatePlaylist: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    when (state) {
+        PlaylistState.Idle -> OutlinedButton(
+            onClick = onCreatePlaylist,
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+        ) {
+            Icon(Icons.AutoMirrored.Filled.PlaylistAdd, contentDescription = null)
+            Spacer(Modifier.width(8.dp))
+            Text("Als YouTube-Music-Playlist speichern ($trackCount)")
+        }
+        PlaylistState.SigningIn -> PanelCard {
+            Text("Anmeldung bei Google …", style = MaterialTheme.typography.bodyMedium)
+            Spacer(Modifier.height(8.dp))
+            LinearProgressIndicator(Modifier.fillMaxWidth(), color = DnbRed)
+        }
+        is PlaylistState.Creating -> PanelCard {
+            Text("Playlist wird erstellt … ${state.done}/${state.total}", style = MaterialTheme.typography.bodyMedium)
+            Spacer(Modifier.height(8.dp))
+            LinearProgressIndicator(
+                progress = { if (state.total == 0) 0f else state.done.toFloat() / state.total },
+                modifier = Modifier.fillMaxWidth(),
+                color = DnbRed,
+            )
+        }
+        is PlaylistState.Done -> PanelCard {
+            val r = state.result
+            Text(
+                "Playlist erstellt: ${r.added} Tracks" + if (r.failed > 0) " (${r.failed} übersprungen)" else "",
+                style = MaterialTheme.typography.titleSmall,
+            )
+            Spacer(Modifier.height(8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(
+                    onClick = { onOpenUrl(r.youTubeMusicUrl) },
+                    colors = ButtonDefaults.buttonColors(containerColor = DnbRed),
+                ) { Text("In YouTube Music öffnen") }
+                TextButton(onClick = onDismiss) { Text("OK") }
+            }
+        }
+        is PlaylistState.Error -> PanelCard {
+            Text(state.message, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                TextButton(onClick = onCreatePlaylist) { Text("Nochmal versuchen") }
+                TextButton(onClick = onDismiss) { Text("Schließen") }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PanelCard(content: @Composable () -> Unit) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        shape = RoundedCornerShape(12.dp),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(Modifier.padding(14.dp)) { content() }
     }
 }
 

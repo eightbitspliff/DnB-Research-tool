@@ -14,10 +14,6 @@ class SettingsStore(context: Context) {
         get() = prefs.getLong(KEY_DAYS, 14L)
         set(value) = prefs.edit().putLong(KEY_DAYS, value).apply()
 
-    var hideMixes: Boolean
-        get() = prefs.getBoolean(KEY_HIDE_MIXES, true)
-        set(value) = prefs.edit().putBoolean(KEY_HIDE_MIXES, value).apply()
-
     var officialOnly: Boolean
         get() = prefs.getBoolean(KEY_OFFICIAL_ONLY, false)
         set(value) = prefs.edit().putBoolean(KEY_OFFICIAL_ONLY, value).apply()
@@ -25,7 +21,6 @@ class SettingsStore(context: Context) {
     private companion object {
         const val KEY_API = "youtube_api_key"
         const val KEY_DAYS = "days"
-        const val KEY_HIDE_MIXES = "hide_mixes"
         const val KEY_OFFICIAL_ONLY = "official_only"
     }
 }

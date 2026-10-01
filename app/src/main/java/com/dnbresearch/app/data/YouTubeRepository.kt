@@ -15,11 +15,32 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 
-class YouTubeApiException(message: String) : IOException(message)
+class YouTubeApiException(message: String, val reason: String = "") : IOException(message) {
+    companion object {
+        fun fromResponse(code: Int, body: String): YouTubeApiException {
+            val error = runCatching { JSONObject(body).getJSONObject("error") }.getOrNull()
+            val reason = error?.optJSONArray("errors")?.optJSONObject(0)?.optString("reason") ?: ""
+            val message = error?.optString("message") ?: ""
+            val text = when {
+                reason == "quotaExceeded" ->
+                    "Tageskontingent der YouTube API ist aufgebraucht. Morgen geht's weiter."
+                reason == "keyInvalid" || message.contains("API key not valid") ->
+                    "Der API-Key ist ungültig. Bitte in den Einstellungen prüfen."
+                reason == "accessNotConfigured" || message.contains("has not been used") ->
+                    "Die \"YouTube Data API v3\" ist im Google-Cloud-Projekt nicht aktiviert."
+                reason == "youtubeSignupRequired" ->
+                    "Dein Google-Konto hat noch keinen YouTube-Kanal. Öffne einmal YouTube und lege einen an."
+                code == 401 -> "Anmeldung abgelaufen – bitte nochmal versuchen."
+                code == 403 -> "Zugriff verweigert (403): $message"
+                else -> "YouTube-Fehler $code: $message"
+            }
+            return YouTubeApiException(text, reason)
+        }
+    }
+}
 
 data class SearchOptions(
     val days: Long = 14,
-    val hideMixes: Boolean = true,
     val officialOnly: Boolean = false,
 )
 
@@ -60,14 +81,16 @@ class YouTubeRepository(
             .flatten()
             .filter { it.passes(options) }
             .map { it.track }
+            .let(TrackFilter::removeDuplicates)
             .sortedWith(compareByDescending<Track> { it.releaseDate }.thenByDescending { it.isOfficialRelease })
     }
 
     private class Candidate(val track: Track, val dnbKeyword: Boolean) {
         fun passes(o: SearchOptions): Boolean {
             if (!TrackFilter.isWithinDays(track.releaseDate, o.days)) return false
-            if (track.durationSeconds in 1 until TrackFilter.MIN_TRACK_SECONDS) return false
-            if (o.hideMixes && TrackFilter.isLikelyMix(track.title, track.durationSeconds)) return false
+            if (track.durationSeconds < TrackFilter.MIN_TRACK_SECONDS) return false
+            // Nur einzelne Tracks: Mixe, Sets, Alben & Co. fliegen immer raus.
+            if (TrackFilter.isLikelyMix(track.title, track.durationSeconds)) return false
             if (o.officialOnly && !track.isOfficialRelease) return false
             // Offizielle Releases haben oft keine Genre-Begriffe in den Metadaten; YouTubes
             // Suchtreffer reichen dort. Bei normalen Uploads verlangen wir einen DnB-Begriff.
@@ -135,26 +158,10 @@ class YouTubeRepository(
             val code = conn.responseCode
             val body = (if (code in 200..299) conn.inputStream else conn.errorStream)
                 ?.bufferedReader()?.use { it.readText() } ?: ""
-            if (code !in 200..299) throw YouTubeApiException(apiErrorMessage(code, body))
+            if (code !in 200..299) throw YouTubeApiException.fromResponse(code, body)
             JSONObject(body)
         } finally {
             conn.disconnect()
-        }
-    }
-
-    private fun apiErrorMessage(code: Int, body: String): String {
-        val error = runCatching { JSONObject(body).getJSONObject("error") }.getOrNull()
-        val reason = error?.optJSONArray("errors")?.optJSONObject(0)?.optString("reason") ?: ""
-        val message = error?.optString("message") ?: ""
-        return when {
-            reason == "quotaExceeded" ->
-                "Tageskontingent der YouTube API ist aufgebraucht. Morgen geht's weiter."
-            reason == "keyInvalid" || message.contains("API key not valid") ->
-                "Der API-Key ist ungültig. Bitte in den Einstellungen prüfen."
-            reason == "accessNotConfigured" || message.contains("has not been used") ->
-                "Die \"YouTube Data API v3\" ist für diesen Key nicht aktiviert."
-            code == 403 -> "Zugriff verweigert (403): $message"
-            else -> "YouTube-Fehler $code: $message"
         }
     }
 

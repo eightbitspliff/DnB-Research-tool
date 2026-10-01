@@ -8,6 +8,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.dnbresearch.app.data.PlaylistCreator
+import com.dnbresearch.app.data.PlaylistResult
 import com.dnbresearch.app.data.SearchOptions
 import com.dnbresearch.app.data.SettingsStore
 import com.dnbresearch.app.data.Track
@@ -24,6 +26,14 @@ sealed interface SearchState {
     data class Error(val message: String) : SearchState
 }
 
+sealed interface PlaylistState {
+    data object Idle : PlaylistState
+    data object SigningIn : PlaylistState
+    data class Creating(val done: Int, val total: Int) : PlaylistState
+    data class Done(val result: PlaylistResult) : PlaylistState
+    data class Error(val message: String) : PlaylistState
+}
+
 class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     private val settings = SettingsStore(app)
@@ -34,9 +44,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         private set
     var days by mutableStateOf(settings.days)
         private set
-    var hideMixes by mutableStateOf(settings.hideMixes)
-        private set
     var officialOnly by mutableStateOf(settings.officialOnly)
+        private set
+
+    var playlistState by mutableStateOf<PlaylistState>(PlaylistState.Idle)
         private set
 
     private var searchJob: Job? = null
@@ -51,11 +62,6 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         days = value
     }
 
-    fun updateHideMixes(value: Boolean) {
-        settings.hideMixes = value
-        hideMixes = value
-    }
-
     fun updateOfficialOnly(value: Boolean) {
         settings.officialOnly = value
         officialOnly = value
@@ -68,15 +74,50 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         }
         searchJob?.cancel()
         state = SearchState.Loading
+        playlistState = PlaylistState.Idle
         searchJob = viewModelScope.launch {
             state = try {
                 val app = getApplication<Application>()
                 val repo = YouTubeRepository(apiKey, app.packageName, signingCertSha1(app))
-                SearchState.Success(repo.findNewTracks(SearchOptions(days, hideMixes, officialOnly)))
+                SearchState.Success(repo.findNewTracks(SearchOptions(days, officialOnly)))
             } catch (e: IOException) {
                 SearchState.Error(e.message ?: "Netzwerkfehler – bist du online?")
             } catch (e: org.json.JSONException) {
                 SearchState.Error("Unerwartete Antwort von YouTube: ${e.message}")
+            }
+        }
+    }
+
+    fun onPlaylistSignInStarted() {
+        playlistState = PlaylistState.SigningIn
+    }
+
+    fun onPlaylistSignInFailed(message: String) {
+        playlistState = PlaylistState.Error(message)
+    }
+
+    fun dismissPlaylistResult() {
+        playlistState = PlaylistState.Idle
+    }
+
+    /** Legt mit dem OAuth-Token eine private Playlist mit allen gefundenen Tracks an. */
+    fun createPlaylist(accessToken: String) {
+        val tracks = (state as? SearchState.Success)?.tracks.orEmpty()
+        if (tracks.isEmpty()) {
+            playlistState = PlaylistState.Idle
+            return
+        }
+        playlistState = PlaylistState.Creating(0, tracks.size)
+        viewModelScope.launch {
+            playlistState = try {
+                val result = PlaylistCreator(accessToken).create(tracks, days) { done, total ->
+                    playlistState = PlaylistState.Creating(done, total)
+                }
+                PlaylistState.Done(result)
+            } catch (e: IOException) {
+                PlaylistState.Error(e.message ?: "Netzwerkfehler – bist du online?")
+            } catch (e: org.json.JSONException) {
+                PlaylistState.Error("Unerwartete Antwort von YouTube: ${e.message}")
             }
         }
     }

@@ -31,6 +31,10 @@ class TrackFilterTest {
         assertTrue(TrackFilter.isLikelyMix("Liquid DnB Mix 2026", 3600))
         assertTrue(TrackFilter.isLikelyMix("Neurofunk Guest Mix", 600))
         assertTrue(TrackFilter.isLikelyMix("Artist - Live at Let It Roll", 300))
+        assertTrue(TrackFilter.isLikelyMix("Best of Liquid 2026", 400))
+        assertTrue(TrackFilter.isLikelyMix("Artist B2B Artist2", 420))
+        assertTrue(TrackFilter.isLikelyMix("Untitled long upload", 10 * 60))
+        assertFalse(TrackFilter.isLikelyMix("Artist - Track (Extended Mix)", 7 * 60))
         assertFalse(TrackFilter.isLikelyMix("Artist - Track (Original Mix)", 300))
         assertFalse(TrackFilter.isLikelyMix("Artist - Track (VIP Mix)", 280))
         assertFalse(TrackFilter.isLikelyMix("Artist - Track (Other Artist Remix)", 320))
@@ -49,5 +53,18 @@ class TrackFilterTest {
         assertTrue(TrackFilter.isWithinDays(LocalDate.of(2026, 9, 17), 14, today))
         assertTrue(TrackFilter.isWithinDays(today, 14, today))
         assertFalse(TrackFilter.isWithinDays(LocalDate.of(2026, 9, 16), 14, today))
+    }
+
+    @Test
+    fun removesLabelUploadWhenOfficialReleaseExists() {
+        fun track(id: String, title: String, channel: String, official: Boolean) =
+            Track(id, title, channel, null, LocalDate.of(2026, 9, 28), 240, official)
+        val official = track("a", "Night Drive", "Artist", true)
+        val labelUpload = track("b", "Artist - Night Drive [Hospital Records]", "Hospital Records", false)
+        val other = track("c", "Other Artist - Different Tune", "Some Label", false)
+        assertEquals(
+            listOf("a", "c"),
+            TrackFilter.removeDuplicates(listOf(official, labelUpload, other, official)).map { it.videoId },
+        )
     }
 }

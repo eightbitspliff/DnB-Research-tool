@@ -20,7 +20,7 @@ Eine einzige HTML-Datei ohne Abhängigkeiten: `index.html` im Browser öffnen.
 
 Tastatur: Pfeiltasten, Leertaste, P für Pause.
 
-`game.html` ist derselbe Inhalt ohne Dokument-Kopf (für die Veröffentlichung als Artifact).
+`game.html` ist der lesbare Quelltext ohne Dokument-Kopf; `index.html` wird daraus mit `build.sh` erzeugt.
 
 ## Als App auf dem Pixel 7a (Android)
 
@@ -32,3 +32,8 @@ läuft offline). GitHub Actions baut bei jedem Push die Datei `Flitz-Igel.apk`.
 3. „Flitz der Igel“ im App-Drawer starten.
 
 Die Android-Zurück-Geste pausiert das Spiel (in Menüs: zurück zum Titel, auf dem Titel: App schließen).
+
+## Entwickeln
+
+`game.html` ist der lesbare Quelltext. Nach Änderungen `./build.sh` ausführen: Das erzeugt die komprimierte
+`index.html`, die im Browser und in der Android-App läuft.

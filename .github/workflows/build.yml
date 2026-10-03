@@ -25,12 +25,12 @@ jobs:
         env:
           # Optional: Repository-Secret YOUTUBE_API_KEY bettet den Key direkt in die App ein.
           YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
-        run: ./gradlew --no-daemon testDebugUnitTest assembleDebug
+        run: ./gradlew --no-daemon testDebugUnitTest assembleDebug :flitz:assembleRelease
 
       - name: APK umbenennen
         run: |
           cp app/build/outputs/apk/debug/app-debug.apk DnB-Radar.apk
-          cp flitz/build/outputs/apk/debug/flitz-debug.apk Flitz-Igel.apk
+          cp flitz/build/outputs/apk/release/flitz-release.apk Flitz-Igel.apk
 
       - uses: actions/upload-artifact@v4
         with:

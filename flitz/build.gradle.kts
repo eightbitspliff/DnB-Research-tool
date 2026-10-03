@@ -11,8 +11,8 @@ android {
         applicationId = "com.flitz.igel"
         minSdk = 26
         targetSdk = 35
-        versionCode = 3
-        versionName = "1.2"
+        versionCode = 4
+        versionName = "1.3"
     }
 
     signingConfigs {
@@ -27,7 +27,9 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            // R8 schrumpft den Code, damit die APK möglichst klein bleibt.
+            isMinifyEnabled = true
+            isShrinkResources = true
             signingConfig = signingConfigs.getByName("debug")
         }
     }
@@ -38,7 +40,7 @@ android {
     }
     androidResources {
         // Nur index.html wird gebraucht.
-        ignoreAssetsPatterns.addAll(listOf("!game.html", "!README.md"))
+        ignoreAssetsPatterns.addAll(listOf("!game.html", "!README.md", "!build.sh"))
     }
 
     compileOptions {

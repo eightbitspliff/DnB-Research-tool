@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Flitz: türkiser Igelkopf mit Stacheln nach links, auf 108dp-Raster (sichtbare Zone 18..90). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Boden -->
+    <path android:fillColor="#FF4BD364" android:pathData="M18,76 L90,76 L90,90 L18,90 Z" />
+    <!-- Stacheln -->
+    <path android:fillColor="#FF0E8276" android:pathData="M52,32 L22,30 L50,44 Z" />
+    <path android:fillColor="#FF0E8276" android:pathData="M50,42 L20,48 L50,56 Z" />
+    <path android:fillColor="#FF0E8276" android:pathData="M50,54 L26,66 L54,64 Z" />
+    <!-- Ohr -->
+    <path android:fillColor="#FF18BFAE" android:pathData="M50,30 L56,18 L62,30 Z" />
+    <!-- Kopf -->
+    <path android:fillColor="#FF18BFAE" android:pathData="M58,50 m-18,0 a18,18 0,1 1,36 0 a18,18 0,1 1,-36 0" />
+    <!-- Schnauze -->
+    <path android:fillColor="#FFFFE2B8" android:pathData="M66,58 m-10,0 a10,8 0,1 1,20 0 a10,8 0,1 1,-20 0" />
+    <!-- Auge -->
+    <path android:fillColor="#FFFFFFFF" android:pathData="M66,44 m-6,0 a6,7 0,1 1,12 0 a6,7 0,1 1,-12 0" />
+    <path android:fillColor="#FF1A1A2E" android:pathData="M69,44 m-3,0 a3,3 0,1 1,6 0 a3,3 0,1 1,-6 0" />
+    <!-- Nase -->
+    <path android:fillColor="#FF1A1A2E" android:pathData="M76,54 m-3,0 a3,3 0,1 1,6 0 a3,3 0,1 1,-6 0" />
+    <!-- Schuh -->
+    <path android:fillColor="#FFFF4F6E" android:pathData="M48,72 L68,72 Q72,72 72,76 L44,76 Q44,72 48,72 Z" />
+</vector>

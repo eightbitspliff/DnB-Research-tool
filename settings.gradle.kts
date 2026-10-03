@@ -14,4 +14,4 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "DnB-Research-Tool"
-include(":app")
+include(":app", ":flitz")

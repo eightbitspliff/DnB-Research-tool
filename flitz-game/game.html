@@ -1120,6 +1120,8 @@ $('bOverSelect').onclick = () => setMode('select');
 
 setMode('title');
 requestAnimationFrame(loop);
-window.__flitz = { G, genLevel, get L(){ return L; }, get P(){ return P; }, startLevel, step, inp };
+window.__flitz = {
+  back(){ if (mode === 'play') { pause(); return true; } if (mode === 'pause') { resume(); return true; } if (mode === 'title') return false; setMode('title'); return true; },
+  pause, G, genLevel, get L(){ return L; }, get P(){ return P; }, startLevel, step, inp };
 })();
 </script>

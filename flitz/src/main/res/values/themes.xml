@@ -1,0 +1,8 @@
+<resources>
+    <style name="Theme.Flitz" parent="android:Theme.Material.NoActionBar">
+        <item name="android:statusBarColor">#FF0C0F30</item>
+        <item name="android:navigationBarColor">#FF0C0F30</item>
+        <item name="android:windowBackground">#FF0C0F30</item>
+        <item name="android:windowFullscreen">true</item>
+    </style>
+</resources>

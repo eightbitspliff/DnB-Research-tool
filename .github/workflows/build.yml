@@ -28,12 +28,19 @@ jobs:
         run: ./gradlew --no-daemon testDebugUnitTest assembleDebug
 
       - name: APK umbenennen
-        run: cp app/build/outputs/apk/debug/app-debug.apk DnB-Radar.apk
+        run: |
+          cp app/build/outputs/apk/debug/app-debug.apk DnB-Radar.apk
+          cp flitz/build/outputs/apk/debug/flitz-debug.apk Flitz-Igel.apk
 
       - uses: actions/upload-artifact@v4
         with:
           name: DnB-Radar-apk
           path: DnB-Radar.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Flitz-Igel-apk
+          path: Flitz-Igel.apk
 
       # Immer aktuelle APK als Release "latest" – bequem direkt am Handy herunterladbar.
       - name: Release "latest" aktualisieren
@@ -49,3 +56,18 @@ jobs:
           body: |
             Neuester Build von `${{ github.ref_name }}` (${{ github.sha }}).
             APK auf dem Pixel herunterladen und installieren.
+
+      # Spiel "Flitz der Igel" als eigenes Release – APK direkt am Pixel herunterladen.
+      - name: Release "flitz-latest" aktualisieren
+        if: github.event_name != 'pull_request'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: flitz-latest
+          name: Flitz der Igel (neuester Build)
+          prerelease: true
+          make_latest: false
+          target_commitish: ${{ github.sha }}
+          files: Flitz-Igel.apk
+          body: |
+            Jump'n'Run mit Wischsteuerung, 15 Level. Neuester Build von `${{ github.ref_name }}` (${{ github.sha }}).
+            `Flitz-Igel.apk` auf dem Pixel herunterladen und installieren.

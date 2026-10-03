@@ -21,3 +21,14 @@ Eine einzige HTML-Datei ohne Abhängigkeiten: `index.html` im Browser öffnen.
 Tastatur: Pfeiltasten, Leertaste, P für Pause.
 
 `game.html` ist derselbe Inhalt ohne Dokument-Kopf (für die Veröffentlichung als Artifact).
+
+## Als App auf dem Pixel 7a (Android)
+
+Das Modul `flitz/` verpackt das Spiel als eigene Android-App (Vollbild, Querformat, Bildschirm bleibt an,
+läuft offline). GitHub Actions baut bei jedem Push die Datei `Flitz-Igel.apk`.
+
+1. Auf GitHub unter **Releases → „Flitz der Igel (neuester Build)“** die Datei `Flitz-Igel.apk` herunterladen.
+2. Öffnen → „Installation aus unbekannten Quellen“ für Browser/Dateien-App erlauben → installieren.
+3. „Flitz der Igel“ im App-Drawer starten.
+
+Die Android-Zurück-Geste pausiert das Spiel (in Menüs: zurück zum Titel, auf dem Titel: App schließen).
